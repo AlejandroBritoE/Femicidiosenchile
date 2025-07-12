@@ -6,6 +6,18 @@ const EXCEL_FILENAME = 'sabana.xlsx';
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Función para convertir fechas seriales de Excel a fechas JavaScript
+function excelSerialToJSDate(serial) {
+    const utcDays = Math.floor(serial - 25569);
+    const utcValue = utcDays * 86400; // 86400 segundos en un día
+    const dateInfo = new Date(utcValue * 1000); // Convertir a milisegundos
+    
+    // Ajustar por zona horaria (JavaScript usa la zona local)
+    const timezoneOffset = dateInfo.getTimezoneOffset() * 60000;
+    const adjustedDate = new Date(dateInfo.getTime() + timezoneOffset);
+    
+    return adjustedDate;
+}
 
 // Función principal de carga automática mejorada
 async function loadExcelAutomatically() {
