@@ -6,66 +6,26 @@ const EXCEL_FILENAME = 'sabana.xlsx';
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Función para convertir fechas seriales de Excel a fechas JavaScript
-function excelSerialToJSDate(serial) {
-    const utcDays = Math.floor(serial - 25569);
-    const utcValue = utcDays * 86400; // 86400 segundos en un día
-    const dateInfo = new Date(utcValue * 1000); // Convertir a milisegundos
-    
-    // Ajustar por zona horaria (JavaScript usa la zona local)
-    const timezoneOffset = dateInfo.getTimezoneOffset() * 60000;
-    const adjustedDate = new Date(dateInfo.getTime() + timezoneOffset);
-    
-    return adjustedDate;
-}
-
-// Función principal de carga automática mejorada
-async function loadExcelAutomatically() {
+function setAppState(loading) {
     try {
-        setAppState(true);
-        console.log(`Iniciando carga automática de ${EXCEL_FILENAME}`);
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const mainContent = document.getElementById('mainContent');
         
-        // Solo intentar cargar desde la ubicación relativa
-        const path = EXCEL_FILENAME;
-        
-        const response = await fetch(path);
-        if (!response.ok) {
-            throw new Error(`No se pudo cargar el archivo desde ${path}`);
+        // Si los elementos no existen, simplemente retornar
+        if (!loadingIndicator || !mainContent) {
+            console.warn('Elementos de carga no encontrados - continuando sin indicador visual');
+            return;
         }
-
-        const arrayBuffer = await response.arrayBuffer();
-        const data = new Uint8Array(arrayBuffer);
-        const workbook = XLSX.read(data, {type: 'array'});
         
-        if (workbook.SheetNames.length === 0) {
-            throw new Error('El archivo no contiene hojas');
+        if (loading) {
+            loadingIndicator.style.display = 'flex';
+            mainContent.style.display = 'none';
+        } else {
+            loadingIndicator.style.display = 'none';
+            mainContent.style.display = 'block';
         }
-
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        femicideData = XLSX.utils.sheet_to_json(firstSheet);
-
-        if (!femicideData || femicideData.length === 0) {
-            throw new Error('El archivo no contiene datos válidos');
-        }
-
-        processData();
-        updateFilters();
-        applyFilters();
-        
-        console.log(`Archivo cargado exitosamente desde: ${path}`);
-        showToast('Datos cargados correctamente', 'success');
-        
     } catch (error) {
-        console.error('Error en carga automática:', error);
-        showToast(`Error: ${error.message}`, 'danger');
-        displayPermanentError(`No se pudo cargar el archivo automáticamente. Asegúrese de que:
-            <ol>
-                <li>El archivo <strong>${EXCEL_FILENAME}</strong> esté en la misma carpeta</li>
-                <li>Se esté usando un servidor web local (no abrir directamente el HTML)</li>
-            </ol>
-        `);
-    } finally {
-        setAppState(false);
+        console.error('Error en setAppState:', error);
     }
 }
 
