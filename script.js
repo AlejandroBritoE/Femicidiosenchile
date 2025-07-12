@@ -433,12 +433,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         for (const [id, description] of Object.entries(requiredElements)) {
             if (!document.getElementById(id)) {
-                throw new Error(`${description} (elemento con ID '${id}') no encontrado en el HTML`);
+                console.warn(`${description} (elemento con ID '${id}') no encontrado`);
             }
         }
         
         // Verificar dependencias
-        if (!checkDependencies()) return;
+        if (!checkDependencies()) {
+            displayPermanentError('Faltan bibliotecas necesarias. Verifique la consola.');
+            return;
+        }
         
         // Inicializar componentes
         initializeToastSystem();
@@ -448,12 +451,20 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Inicializando aplicación...', 'info');
         
         // Iniciar carga automática
-        setTimeout(loadExcelAutomatically, 300);
+        setTimeout(() => {
+            try {
+                loadExcelAutomatically();
+            } catch (e) {
+                console.error('Error al cargar datos:', e);
+                displayPermanentError('Error al cargar datos iniciales: ' + e.message);
+            }
+        }, 300);
     } catch (error) {
         console.error('Error en la inicialización:', error);
         displayPermanentError(`Error de inicialización: ${error.message}`);
     }
 });
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Función para verificar dependencias
@@ -483,16 +494,48 @@ function checkDependencies() {
 
 // Modificar el DOMContentLoaded para incluir verificación
 document.addEventListener('DOMContentLoaded', function() {
-    if (!checkDependencies()) return;
-    
-    initializeToastSystem();
-    initializeCharts();
-    
-    // Mostrar mensaje de carga
-    showToast('Inicializando aplicación...', 'info');
-    
-    // Iniciar carga automática
-    setTimeout(loadExcelAutomatically, 300);
+    try {
+        // Verificar elementos del DOM críticos
+        const requiredElements = {
+            'loadingIndicator': 'Indicador de carga',
+            'mainContent': 'Contenedor principal',
+            'ageChart': 'Gráfico de edades',
+            'yearChart': 'Gráfico por año',
+            'regionChart': 'Gráfico por región'
+        };
+        
+        for (const [id, description] of Object.entries(requiredElements)) {
+            if (!document.getElementById(id)) {
+                console.warn(`${description} (elemento con ID '${id}') no encontrado`);
+            }
+        }
+        
+        // Verificar dependencias
+        if (!checkDependencies()) {
+            displayPermanentError('Faltan bibliotecas necesarias. Verifique la consola.');
+            return;
+        }
+        
+        // Inicializar componentes
+        initializeToastSystem();
+        initializeCharts();
+        
+        // Mostrar mensaje de carga
+        showToast('Inicializando aplicación...', 'info');
+        
+        // Iniciar carga automática
+        setTimeout(() => {
+            try {
+                loadExcelAutomatically();
+            } catch (e) {
+                console.error('Error al cargar datos:', e);
+                displayPermanentError('Error al cargar datos iniciales: ' + e.message);
+            }
+        }, 300);
+    } catch (error) {
+        console.error('Error en la inicialización:', error);
+        displayPermanentError(`Error de inicialización: ${error.message}`);
+    }
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
