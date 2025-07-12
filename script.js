@@ -23,55 +23,33 @@ async function loadExcelAutomatically() {
         setAppState(true);
         console.log(`Iniciando carga automática de ${EXCEL_FILENAME}`);
         
-        const response = await fetch(EXCEL_FILENAME, {
-            mode: 'cors',
-            headers: {
-                'Origin': window.location.origin
-            }
-        });
+        const response = await fetch(EXCEL_FILENAME);
         
         if (!response.ok) {
-            throw new Error(`No se pudo cargar el archivo desde ${EXCEL_FILENAME}. Status: ${response.status}`);
+            throw new Error(`No se pudo cargar el archivo. Status: ${response.status}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
         const workbook = XLSX.read(data, {type: 'array'});
         
-        if (workbook.SheetNames.length === 0) {
-            throw new Error('El archivo no contiene hojas');
-        }
-
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         femicideData = XLSX.utils.sheet_to_json(firstSheet);
-
-        if (!femicideData || femicideData.length === 0) {
-            throw new Error('El archivo no contiene datos válidos');
-        }
 
         processData();
         updateFilters();
         applyFilters();
         
-        console.log(`Archivo cargado exitosamente desde: ${EXCEL_FILENAME}`);
         showToast('Datos cargados correctamente', 'success');
         
     } catch (error) {
         console.error('Error en carga automática:', error);
-        showToast(`Error: ${error.message}`, 'danger');
-        displayPermanentError(`No se pudo cargar el archivo automáticamente. Asegúrese de que:
-            <ol>
-                <li>El archivo <strong>sabana.xlsx</strong> esté en el repositorio</li>
-                <li>La URL sea correcta: ${EXCEL_FILENAME}</li>
-            </ol>
-            <a href="https://github.com/AlejandroBritoE/Femicidiosenchile/sabana.xlsx" target="_blank" class="btn btn-sm btn-primary">Ver repositorio</a>
-        `);
-          // Cargar datos de prueba si falla
+        showToast('Error al cargar datos. Usando datos de prueba.', 'danger');
         loadTestData();
     } finally {
         setAppState(false);
     }
-} // <-- Esta es la llave de cierre que faltaba
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -439,28 +417,11 @@ function loadTestData() {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Inicialización de la aplicación
+// Inicialización
 document.addEventListener('DOMContentLoaded', function() {
-    try {
-        // Verificar dependencias
-        if (!checkDependencies()) {
-            displayPermanentError('Faltan bibliotecas necesarias. Verifique la consola.');
-            return;
-        }
-        
-        // Inicializar componentes
-        initializeToastSystem();
-        initializeCharts();
-        
-        // Mostrar mensaje de carga
-        showToast('Inicializando aplicación...', 'info');
-        
-        // Iniciar carga automática
-        loadExcelAutomatically();
-    } catch (error) {
-        console.error('Error en la inicialización:', error);
-        displayPermanentError(`Error de inicialización: ${error.message}`);
-    }
+    initializeToastSystem();
+    initializeCharts();
+    loadExcelAutomatically();
 });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
