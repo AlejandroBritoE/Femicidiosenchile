@@ -54,16 +54,24 @@ function processData() {
             ? processedItem.Region.toString().trim().toUpperCase() 
             : 'DESCONOCIDO';
 
-        // Procesamiento de fecha
+        // Procesamiento de fecha - manejo mejorado
         if (processedItem.Fecha) {
             try {
-                if (typeof processedItem.Fecha === 'string') {
-                    const dateParts = processedItem.Fecha.split('/');
+                // Intenta parsear como fecha de Excel (número serial)
+                if (!isNaN(processedItem.Fecha)) {
+                    const dateObj = excelSerialToJSDate(parseFloat(processedItem.Fecha));
+                    processedItem.FechaFormatted = dateObj.toLocaleDateString('es-ES');
+                    processedItem.Año = dateObj.getFullYear().toString();
+                } 
+                // Intenta parsear como string (dd/mm/yyyy)
+                else if (typeof processedItem.Fecha === 'string') {
+                    const dateParts = processedItem.Fecha.split(/[/-]/);
                     if (dateParts.length === 3) {
                         const day = parseInt(dateParts[0]);
                         const month = parseInt(dateParts[1]) - 1;
                         let year = parseInt(dateParts[2]);
                         
+                        // Manejar años de dos dígitos
                         if (dateParts[2].length === 2) {
                             year = year >= 30 ? 1900 + year : 2000 + year;
                         }
@@ -74,30 +82,15 @@ function processData() {
                             processedItem.Año = year.toString();
                         }
                     }
-                } else if (typeof processedItem.Fecha === 'number') {
-                    const jsDate = excelSerialToJSDate(processedItem.Fecha);
-                    processedItem.FechaFormatted = jsDate.toLocaleDateString('es-ES');
-                    processedItem.Año = jsDate.getFullYear().toString();
                 }
             } catch (e) {
                 console.warn('Error al procesar fecha:', processedItem.Fecha, e);
             }
         }
 
-        // Procesamiento de edad
-        if (processedItem.Edad) {
-            processedItem.Edad = parseInt(processedItem.Edad) || 0;
-        }
-
-        // Normalización de nombre
-        if (processedItem.Nombre_Victima) {
-            processedItem.Nombre_Victima = processedItem.Nombre_Victima.toString().trim();
-        }
-
+        // Resto del procesamiento...
         return processedItem;
     });
-
-    console.log('Datos procesados correctamente:', femicideData);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
