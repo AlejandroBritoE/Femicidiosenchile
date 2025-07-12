@@ -1,7 +1,7 @@
 // Variables globales
 let femicideData = [];
 let ageChart, yearChart, regionChart;
-const EXCEL_FILENAME = 'https://github.com/AlejandroBritoE/Femicidiosenchile/blob/5497d849b686dbd41115d3ac67cdcc172400d8f2/sabana.xlsx';
+const EXCEL_FILENAME = 'https://github.com/AlejandroBritoE/Femicidiosenchile/blob/master/sabana.xlsx';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
