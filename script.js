@@ -1,40 +1,30 @@
 // Variables globales
 let femicideData = [];
 let ageChart, yearChart, regionChart;
-
-// Registrar plugins de Chart.js una sola vez
-Chart.register(ChartDataLabels);
-
-// Agrega esto en su lugar para cargar automáticamente al seleccionar archivo
-document.getElementById('excelFile').addEventListener('change', function(e) {
-    if (this.files && this.files.length > 0) {
-        loadExcelData();
-    }
-});
+const EXCEL_FILENAME = 'sabana.xlsx';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-// Configuración - nombre del archivo
-const EXCEL_FILENAME = 'sabana.xlsx'; // Asegúrate que esté en el mismo directorio
-
-// Función mejorada para cargar el archivo
+// Función principal de carga automática mejorada
 async function loadExcelAutomatically() {
     try {
-        showToast(`Cargando ${EXCEL_FILENAME}...`, 'info');
+        setAppState(true);
+        console.log(`Iniciando carga automática de ${EXCEL_FILENAME}`);
         
-        // Verifica si el archivo existe
-        const response = await fetch(EXCEL_FILENAME);
+        // Solo intentar cargar desde la ubicación relativa
+        const path = EXCEL_FILENAME;
+        
+        const response = await fetch(path);
         if (!response.ok) {
-            throw new Error(`Archivo no encontrado (${response.status})`);
+            throw new Error(`No se pudo cargar el archivo desde ${path}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
         const workbook = XLSX.read(data, {type: 'array'});
         
-        // Verifica que haya al menos una hoja
         if (workbook.SheetNames.length === 0) {
             throw new Error('El archivo no contiene hojas');
         }
@@ -50,133 +40,92 @@ async function loadExcelAutomatically() {
         updateFilters();
         applyFilters();
         
+        console.log(`Archivo cargado exitosamente desde: ${path}`);
         showToast('Datos cargados correctamente', 'success');
-    } catch (error) {
-        console.error('Error al cargar:', error);
-        showToast(`Error: ${error.message}`, 'danger');
         
-        // Muestra el input para carga manual como respaldo
-        document.getElementById('excelFile').style.display = 'block';
+    } catch (error) {
+        console.error('Error en carga automática:', error);
+        showToast(`Error: ${error.message}`, 'danger');
+        displayPermanentError(`No se pudo cargar el archivo automáticamente. Asegúrese de que:
+            <ol>
+                <li>El archivo <strong>${EXCEL_FILENAME}</strong> esté en la misma carpeta</li>
+                <li>Se esté usando un servidor web local (no abrir directamente el HTML)</li>
+            </ol>
+        `);
+    } finally {
+        setAppState(false);
     }
 }
-
-// Modifica el event listener para el input manual
-document.getElementById('excelFile').addEventListener('change', function(e) {
-    if (this.files && this.files.length > 0) {
-        loadManualExcel(this.files[0]);
-    }
-});
-
-// Función para carga manual
-function loadManualExcel(file) {
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            femicideData = XLSX.utils.sheet_to_json(firstSheet);
-
-            processData();
-            updateFilters();
-            applyFilters();
-            
-            showToast('Datos cargados manualmente', 'success');
-        } catch (error) {
-            console.error('Error:', error);
-            showToast('Error al procesar archivo: ' + error.message, 'danger');
-        }
-    };
-    
-    reader.readAsArrayBuffer(file);
-}
-
-// Inicialización
-document.addEventListener('DOMContentLoaded', function() {
-    initializeCharts();
-    initializeToastSystem();
-    
-    // Oculta el input al inicio (se mostrará solo si falla la carga automática)
-    document.getElementById('excelFile').style.display = 'none';
-    
-    loadExcelAutomatically();
-});
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Función para procesar los datos del Excel
 function processData() {
-    femicideData.forEach(item => {
-        // Normalizar regiones (asegurar mayúsculas y trim)
-        if (item.Region) {
-            item.Region = item.Region.toString().trim().toUpperCase();
-        } else {
-            item.Region = 'DESCONOCIDO';
-        }
-        
-        // Procesar fechas y extraer año
-        if (item.Fecha) {
-            // Intentar parsear la fecha si es un string
-            if (typeof item.Fecha === 'string') {
-                try {
-                    // Formato dd/mm/yyyy
-                    const dateParts = item.Fecha.split('/');
+    if (!femicideData || !Array.isArray(femicideData)) {
+        throw new Error('Datos no válidos para procesar');
+    }
+
+    femicideData = femicideData.map(item => {
+        // Normalización de datos con valores por defecto
+        const processedItem = {
+            Nombre_Victima: 'Desconocido',
+            Edad: 0,
+            Region: 'DESCONOCIDO',
+            Ciudad: 'Desconocida',
+            FechaFormatted: 'Desconocida',
+            Año: 'Desconocido',
+            Tipo: 'No especificado',
+            ...item  // Spread operator para mantener los datos originales
+        };
+
+        // Procesamiento de región
+        processedItem.Region = processedItem.Region 
+            ? processedItem.Region.toString().trim().toUpperCase() 
+            : 'DESCONOCIDO';
+
+        // Procesamiento de fecha
+        if (processedItem.Fecha) {
+            try {
+                if (typeof processedItem.Fecha === 'string') {
+                    const dateParts = processedItem.Fecha.split('/');
                     if (dateParts.length === 3) {
                         const day = parseInt(dateParts[0]);
                         const month = parseInt(dateParts[1]) - 1;
                         let year = parseInt(dateParts[2]);
                         
-                        // Manejar años de 2 dígitos
                         if (dateParts[2].length === 2) {
                             year = year >= 30 ? 1900 + year : 2000 + year;
                         }
                         
-                        item.FechaFormatted = new Date(year, month, day).toLocaleDateString('es-ES');
-                        item.Año = year.toString();
+                        const dateObj = new Date(year, month, day);
+                        if (!isNaN(dateObj.getTime())) {
+                            processedItem.FechaFormatted = dateObj.toLocaleDateString('es-ES');
+                            processedItem.Año = year.toString();
+                        }
                     }
-                } catch (e) {
-                    console.warn('Error al parsear fecha:', item.Fecha);
-                    item.FechaFormatted = 'Desconocida';
-                    item.Año = 'Desconocido';
+                } else if (typeof processedItem.Fecha === 'number') {
+                    const jsDate = excelSerialToJSDate(processedItem.Fecha);
+                    processedItem.FechaFormatted = jsDate.toLocaleDateString('es-ES');
+                    processedItem.Año = jsDate.getFullYear().toString();
                 }
-            }
-            // Si es número (fecha serial de Excel)
-            else if (typeof item.Fecha === 'number') {
-                const jsDate = excelSerialToJSDate(item.Fecha);
-                item.FechaFormatted = jsDate.toLocaleDateString('es-ES');
-                item.Año = jsDate.getFullYear().toString();
+            } catch (e) {
+                console.warn('Error al procesar fecha:', processedItem.Fecha, e);
             }
         }
-        
-        // Asegurar que la edad sea número
-        if (item.Edad) {
-            item.Edad = parseInt(item.Edad) || 0;
-        } else {
-            item.Edad = 0;
-        }
-        
-        // Normalizar nombre de víctima
-        if (item.Nombre_Victima) {
-            item.Nombre_Victima = item.Nombre_Victima.toString().trim();
-        } else {
-            item.Nombre_Victima = 'Desconocido';
-        }
-    });
-}
 
-// Función para convertir fecha serial de Excel a Date (si no está definida)
-function excelSerialToJSDate(serial) {
-    const utcDays = Math.floor(serial - 25569);
-    const utcValue = utcDays * 86400;
-    const dateInfo = new Date(utcValue * 1000);
-    
-    const fractionalDay = serial - Math.floor(serial) + 0.0000001;
-    const hours = Math.floor(fractionalDay * 24);
-    const minutes = Math.floor((fractionalDay * 24 - hours) * 60);
-    
-    return new Date(dateInfo.getFullYear(), dateInfo.getMonth(), dateInfo.getDate(), hours, minutes);
+        // Procesamiento de edad
+        if (processedItem.Edad) {
+            processedItem.Edad = parseInt(processedItem.Edad) || 0;
+        }
+
+        // Normalización de nombre
+        if (processedItem.Nombre_Victima) {
+            processedItem.Nombre_Victima = processedItem.Nombre_Victima.toString().trim();
+        }
+
+        return processedItem;
+    });
+
+    console.log('Datos procesados correctamente:', femicideData);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -316,6 +265,30 @@ function updateYearChart(data) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+function setAppState(loading) {
+    try {
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (!loadingIndicator || !mainContent) {
+            throw new Error('Elementos del DOM no encontrados');
+        }
+        
+        if (loading) {
+            loadingIndicator.style.display = 'flex';
+            mainContent.style.display = 'none';
+        } else {
+            loadingIndicator.style.display = 'none';
+            mainContent.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error en setAppState:', error);
+        // Opcional: Mostrar mensaje de error al usuario
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Modifica la función loadExcelData para que no verifique el botón
 function loadExcelData() {
     const fileInput = document.getElementById('excelFile');
@@ -400,16 +373,125 @@ function initializeToastSystem() {
     document.head.appendChild(style);
 }
 
-// Llama a initializeToastSystem cuando el DOM esté listo
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 document.addEventListener('DOMContentLoaded', function() {
-    initializeCharts();
+    try {
+        // Verificar elementos del DOM críticos
+        const requiredElements = {
+            'loadingIndicator': 'Indicador de carga',
+            'mainContent': 'Contenedor principal',
+            'ageChart': 'Gráfico de edades',
+            'yearChart': 'Gráfico por año',
+            'regionChart': 'Gráfico por región'
+        };
+        
+        for (const [id, description] of Object.entries(requiredElements)) {
+            if (!document.getElementById(id)) {
+                throw new Error(`${description} (elemento con ID '${id}') no encontrado en el HTML`);
+            }
+        }
+        
+        // Verificar dependencias
+        if (!checkDependencies()) return;
+        
+        // Inicializar componentes
+        initializeToastSystem();
+        initializeCharts();
+        
+        // Mostrar mensaje de carga
+        showToast('Inicializando aplicación...', 'info');
+        
+        // Iniciar carga automática
+        setTimeout(loadExcelAutomatically, 300);
+    } catch (error) {
+        console.error('Error en la inicialización:', error);
+        displayPermanentError(`Error de inicialización: ${error.message}`);
+    }
+});
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Función para verificar dependencias
+function checkDependencies() {
+    const requiredLibs = {
+        'XLSX': typeof XLSX,
+        'Chart': typeof Chart,
+        'ChartDataLabels': typeof ChartDataLabels
+    };
+
+    let allLoaded = true;
+    
+    for (const [lib, type] of Object.entries(requiredLibs)) {
+        if (type === 'undefined') {
+            console.error(`Falta la biblioteca: ${lib}`);
+            allLoaded = false;
+        }
+    }
+
+    if (!allLoaded) {
+        displayPermanentError('Error: Faltan bibliotecas necesarias. Verifique la consola para más detalles.');
+        return false;
+    }
+    
+    return true;
+}
+
+// Modificar el DOMContentLoaded para incluir verificación
+document.addEventListener('DOMContentLoaded', function() {
+    if (!checkDependencies()) return;
+    
     initializeToastSystem();
+    initializeCharts();
+    
+    // Mostrar mensaje de carga
+    showToast('Inicializando aplicación...', 'info');
+    
+    // Iniciar carga automática
+    setTimeout(loadExcelAutomatically, 300);
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Función para inicializar gráficos
+// Elimina la doble inicialización de gráficos (quita una de las funciones initializeCharts)
+// Mantén solo esta versión mejorada:
+
 function initializeCharts() {
+    // Destruir gráficos existentes antes de crear nuevos
+    [ageChart, yearChart, regionChart].forEach(chart => {
+        if (chart) chart.destroy();
+    });
+
+    // Verificar que los canvas existan
+    const ageCanvas = document.getElementById('ageChart');
+    const yearCanvas = document.getElementById('yearChart');
+    const regionCanvas = document.getElementById('regionChart');
+    
+    if (!ageCanvas || !yearCanvas || !regionCanvas) {
+        throw new Error('No se encontraron todos los elementos canvas necesarios');
+    }
+
+    // Gráfico de edades (torta)
+    ageChart = new Chart(ageCanvas.getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: ['0-18 años', '19-25 años', '26-35 años', '36-45 años', '46+ años'],
+            datasets: [{
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: { /* ... mantener las opciones existentes ... */ }
+    });
+
+    // Resto de la inicialización de gráficos...
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -558,7 +640,7 @@ ageChart = new Chart(ageCtx, {
             }
         }
     });
-}
+
 
 // Modificar updateAllVisualizations para aceptar parámetros de filtro
 function updateAllVisualizations(data = femicideData, region = 'todas las regiones', year = 'todos los años') {
@@ -895,4 +977,3 @@ function generateColors(count) {
     return colors;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
