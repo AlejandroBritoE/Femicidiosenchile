@@ -4,6 +4,86 @@ let ageChart, yearChart, regionChart;
 const EXCEL_FILENAME = 'sabana.xlsx';
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Función para convertir fechas seriales de Excel a fechas JavaScript
+function excelSerialToJSDate(serial) {
+    const utcDays = Math.floor(serial - 25569);
+    const utcValue = utcDays * 86400;
+    const dateInfo = new Date(utcValue * 1000);
+    const timezoneOffset = dateInfo.getTimezoneOffset() * 60000;
+    return new Date(dateInfo.getTime() + timezoneOffset);
+}
+
+// Función principal de carga automática
+async function loadExcelAutomatically() {
+    try {
+        setAppState(true);
+        console.log(`Iniciando carga automática de ${EXCEL_FILENAME}`);
+        
+        const path = EXCEL_FILENAME;
+        const response = await fetch(path);
+        
+        if (!response.ok) {
+            throw new Error(`No se pudo cargar el archivo desde ${path}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, {type: 'array'});
+        
+        if (workbook.SheetNames.length === 0) {
+            throw new Error('El archivo no contiene hojas');
+        }
+
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        femicideData = XLSX.utils.sheet_to_json(firstSheet);
+
+        if (!femicideData || femicideData.length === 0) {
+            throw new Error('El archivo no contiene datos válidos');
+        }
+
+        processData();
+        updateFilters();
+        applyFilters();
+        
+        console.log(`Archivo cargado exitosamente desde: ${path}`);
+        showToast('Datos cargados correctamente', 'success');
+        
+    } catch (error) {
+        console.error('Error en carga automática:', error);
+        showToast(`Error: ${error.message}`, 'danger');
+        // Función para mostrar errores permanentes
+        displayPermanentError(`No se pudo cargar el archivo automáticamente. Asegúrese de que:
+            <ol>
+                <li>El archivo <strong>${EXCEL_FILENAME}</strong> esté en la misma carpeta</li>
+                <li>Se esté usando un servidor web local</li>
+            </ol>
+        `);
+    } finally {
+        setAppState(false);
+    }
+}
+
+// Función para mostrar errores permanentes
+function displayPermanentError(message) {
+    const errorContainer = document.createElement('div');
+    errorContainer.innerHTML = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // Insertar al inicio del contenedor principal
+    const container = document.querySelector('.container');
+    if (container) {
+        container.insertBefore(errorContainer, container.firstChild);
+    } else {
+        document.body.insertBefore(errorContainer, document.body.firstChild);
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function setAppState(loading) {
