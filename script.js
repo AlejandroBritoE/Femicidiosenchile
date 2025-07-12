@@ -303,30 +303,6 @@ function updateYearChart(data) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function setAppState(loading) {
-    try {
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const mainContent = document.getElementById('mainContent');
-        
-        if (!loadingIndicator || !mainContent) {
-            throw new Error('Elementos del DOM no encontrados');
-        }
-        
-        if (loading) {
-            loadingIndicator.style.display = 'flex';
-            mainContent.style.display = 'none';
-        } else {
-            loadingIndicator.style.display = 'none';
-            mainContent.style.display = 'block';
-        }
-    } catch (error) {
-        console.error('Error en setAppState:', error);
-        // Opcional: Mostrar mensaje de error al usuario
-    }
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Modifica la función loadExcelData para que no verifique el botón
 function loadExcelData() {
     const fileInput = document.getElementById('excelFile');
