@@ -64,8 +64,14 @@ async function loadExcelAutomatically() {
                 <li>El archivo <strong>sabana.xlsx</strong> esté en el repositorio</li>
                 <li>La URL sea correcta: ${EXCEL_FILENAME}</li>
             </ol>
-            <a href="https://github.com/AlejandroBritoE/Femicidiosenchile" target="_blank" class="btn btn-sm btn-primary">Ver repositorio</a>
+            <a href="https://github.com/AlejandroBritoE/Femicidiosenchile/sabana.xlsx" target="_blank" class="btn btn-sm btn-primary">Ver repositorio</a>
         `);
+          // Cargar datos de prueba si falla
+        loadTestData();
+    } finally {
+        setAppState(false);
+    }
+} // <-- Esta es la llave de cierre que faltaba
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
