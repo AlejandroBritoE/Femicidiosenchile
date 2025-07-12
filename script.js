@@ -1,12 +1,12 @@
 // Variables globales
 let femicideData = [];
 let ageChart, yearChart, regionChart;
-const EXCEL_FILENAME = 'sabana.xlsx';
+const EXCEL_FILENAME = 'https://github.com/AlejandroBritoE/Femicidiosenchile/blob/5497d849b686dbd41115d3ac67cdcc172400d8f2/sabana.xlsx';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Función para convertir fechas seriales de Excel a fechas JavaScript
+// // Función para convertir fechas seriales de Excel a fechas JavaScript
 function excelSerialToJSDate(serial) {
     const utcDays = Math.floor(serial - 25569);
     const utcValue = utcDays * 86400;
@@ -17,23 +17,18 @@ function excelSerialToJSDate(serial) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const response = await fetch(EXCEL_FILENAME, {
-    mode: 'cors',
-    headers: {
-        'Origin': window.location.origin
-    }
-});
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-const EXCEL_FILENAME = 'https://alejandrobritoe.github.io/Femicidiosenchile/sabana.xlsx';
-
+// Función principal de carga automática
 async function loadExcelAutomatically() {
     try {
         setAppState(true);
         console.log(`Iniciando carga automática de ${EXCEL_FILENAME}`);
         
-        const response = await fetch(EXCEL_FILENAME);
+        const response = await fetch(EXCEL_FILENAME, {
+            mode: 'cors',
+            headers: {
+                'Origin': window.location.origin
+            }
+        });
         
         if (!response.ok) {
             throw new Error(`No se pudo cargar el archivo desde ${EXCEL_FILENAME}. Status: ${response.status}`);
@@ -43,23 +38,34 @@ async function loadExcelAutomatically() {
         const data = new Uint8Array(arrayBuffer);
         const workbook = XLSX.read(data, {type: 'array'});
         
-        // Resto del código igual...
+        if (workbook.SheetNames.length === 0) {
+            throw new Error('El archivo no contiene hojas');
+        }
+
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        femicideData = XLSX.utils.sheet_to_json(firstSheet);
+
+        if (!femicideData || femicideData.length === 0) {
+            throw new Error('El archivo no contiene datos válidos');
+        }
+
+        processData();
+        updateFilters();
+        applyFilters();
+        
+        console.log(`Archivo cargado exitosamente desde: ${EXCEL_FILENAME}`);
+        showToast('Datos cargados correctamente', 'success');
+        
     } catch (error) {
         console.error('Error en carga automática:', error);
-        showToast(`Error al cargar datos: ${error.message}`, 'danger');
-        displayPermanentError(`
-            No se pudo cargar el archivo automáticamente. Verifica que:
-            <ul>
+        showToast(`Error: ${error.message}`, 'danger');
+        displayPermanentError(`No se pudo cargar el archivo automáticamente. Asegúrese de que:
+            <ol>
                 <li>El archivo <strong>sabana.xlsx</strong> esté en el repositorio</li>
-                <li>El nombre del archivo sea exactamente "sabana.xlsx" (sensible a mayúsculas)</li>
-                <li>El archivo esté en la raíz del repositorio o ajusta la ruta en el código</li>
-            </ul>
+                <li>La URL sea correcta: ${EXCEL_FILENAME}</li>
+            </ol>
             <a href="https://github.com/AlejandroBritoE/Femicidiosenchile" target="_blank" class="btn btn-sm btn-primary">Ver repositorio</a>
         `);
-    } finally {
-        setAppState(false);
-    }
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
