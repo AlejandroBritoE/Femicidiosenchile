@@ -1,7 +1,7 @@
 // Variables globales
 let femicideData = [];
 let ageChart, yearChart, regionChart;
-const EXCEL_FILENAME = 'https://github.com/AlejandroBritoE/Femicidiosenchile/sabana.xlsx';
+const EXCEL_FILENAME = 'https://raw.githubusercontent.com/AlejandroBritoE/Femicidiosenchile/main/sabana.xlsx';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,6 +191,8 @@ function updateRegionFilter() {
     });
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Función para actualizar filtro de años
 function updateYearFilter() {
     const yearFilter = document.getElementById('yearFilter');
@@ -211,6 +213,8 @@ function updateYearFilter() {
         yearFilter.appendChild(option);
     });
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Función para aplicar filtros
 function applyFilters() {
@@ -365,6 +369,8 @@ function loadExcelData() {
     reader.readAsArrayBuffer(file);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Función para mostrar notificaciones toast
 function showToast(message, type = 'info') {
     const toastContainer = document.createElement('div');
@@ -392,6 +398,8 @@ function showToast(message, type = 'info') {
     }, 5000);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Agrega esto al inicializar la aplicación para los estilos de los toast
 function initializeToastSystem() {
     const style = document.createElement('style');
@@ -408,6 +416,52 @@ function initializeToastSystem() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+function displayPermanentError(message) {
+    const errorContainer = document.getElementById('errorContainer');
+    if (!errorContainer) {
+        const container = document.createElement('div');
+        container.id = 'errorContainer';
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.right = '0';
+        container.style.zIndex = '2000';
+        container.style.padding = '15px';
+        container.style.backgroundColor = '#f8d7da';
+        container.style.color = '#721c24';
+        container.style.border = '1px solid #f5c6cb';
+        document.body.prepend(container);
+    }
+    
+    document.getElementById('errorContainer').innerHTML = `
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Error crítico</h4>
+            <p>${message}</p>
+            <hr>
+            <p class="mb-0">Por favor, verifica la conexión o contacta al administrador.</p>
+        </div>
+    `;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+function loadTestData() {
+    console.log('Cargando datos de prueba...');
+    femicideData = [
+        { Nombre_Victima: "Ejemplo 1", Edad: 25, Region: "METROPOLITANA", Ciudad: "Santiago", Fecha: "01/01/2020", Tipo: "Femicidio" },
+        { Nombre_Victima: "Ejemplo 2", Edad: 32, Region: "VALPARAÍSO", Ciudad: "Valparaíso", Fecha: "15/06/2020", Tipo: "Femicidio" },
+        { Nombre_Victima: "Ejemplo 3", Edad: 19, Region: "METROPOLITANA", Ciudad: "Puente Alto", Fecha: "30/11/2021", Tipo: "Femicidio" }
+    ];
+    
+    processData();
+    updateFilters();
+    applyFilters();
+    
+    showToast('Se cargaron datos de prueba', 'warning');
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Inicialización de la aplicación
 document.addEventListener('DOMContentLoaded', function() {
