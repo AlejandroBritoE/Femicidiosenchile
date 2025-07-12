@@ -15,72 +15,40 @@ function excelSerialToJSDate(serial) {
     return new Date(dateInfo.getTime() + timezoneOffset);
 }
 
-// Función principal de carga automática
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const EXCEL_FILENAME = 'https://alejandrobritoe.github.io/Femicidiosenchile/sabana.xlsx';
+
 async function loadExcelAutomatically() {
     try {
         setAppState(true);
         console.log(`Iniciando carga automática de ${EXCEL_FILENAME}`);
         
-        const path = EXCEL_FILENAME;
-        const response = await fetch(path);
+        const response = await fetch(EXCEL_FILENAME);
         
         if (!response.ok) {
-            throw new Error(`No se pudo cargar el archivo desde ${path}`);
+            throw new Error(`No se pudo cargar el archivo desde ${EXCEL_FILENAME}. Status: ${response.status}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
         const workbook = XLSX.read(data, {type: 'array'});
         
-        if (workbook.SheetNames.length === 0) {
-            throw new Error('El archivo no contiene hojas');
-        }
-
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        femicideData = XLSX.utils.sheet_to_json(firstSheet);
-
-        if (!femicideData || femicideData.length === 0) {
-            throw new Error('El archivo no contiene datos válidos');
-        }
-
-        processData();
-        updateFilters();
-        applyFilters();
-        
-        console.log(`Archivo cargado exitosamente desde: ${path}`);
-        showToast('Datos cargados correctamente', 'success');
-        
+        // Resto del código igual...
     } catch (error) {
         console.error('Error en carga automática:', error);
-        showToast(`Error: ${error.message}`, 'danger');
-        // Función para mostrar errores permanentes
-        displayPermanentError(`No se pudo cargar el archivo automáticamente. Asegúrese de que:
-            <ol>
-                <li>El archivo <strong>${EXCEL_FILENAME}</strong> esté en la misma carpeta</li>
-                <li>Se esté usando un servidor web local</li>
-            </ol>
+        showToast(`Error al cargar datos: ${error.message}`, 'danger');
+        displayPermanentError(`
+            No se pudo cargar el archivo automáticamente. Verifica que:
+            <ul>
+                <li>El archivo <strong>sabana.xlsx</strong> esté en el repositorio</li>
+                <li>El nombre del archivo sea exactamente "sabana.xlsx" (sensible a mayúsculas)</li>
+                <li>El archivo esté en la raíz del repositorio o ajusta la ruta en el código</li>
+            </ul>
+            <a href="https://github.com/AlejandroBritoE/Femicidiosenchile" target="_blank" class="btn btn-sm btn-primary">Ver repositorio</a>
         `);
     } finally {
         setAppState(false);
-    }
-}
-
-// Función para mostrar errores permanentes
-function displayPermanentError(message) {
-    const errorContainer = document.createElement('div');
-    errorContainer.innerHTML = `
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>Error:</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-    
-    // Insertar al inicio del contenedor principal
-    const container = document.querySelector('.container');
-    if (container) {
-        container.insertBefore(errorContainer, container.firstChild);
-    } else {
-        document.body.insertBefore(errorContainer, document.body.firstChild);
     }
 }
 
