@@ -8722,18 +8722,7 @@ function updateVictimsTable(data = femicideData) {
     `;
     tableBody.appendChild(row);
   });
-
-  // Actualizar contador
-  const total = femicideData.length;
-  const showing = data.length - omittedCount;
-  document.getElementById('counter').textContent = 
-    `Mostrando ${showing} de ${total} registros (${omittedCount} omitidos por datos incompletos)`;
-  
-  console.assert(
-    total === showing + omittedCount, 
-    `Inconsistencia: Total(${total}) ≠ Mostrados(${showing}) + Omitidos(${omittedCount})`
-  );
-}
+  }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
