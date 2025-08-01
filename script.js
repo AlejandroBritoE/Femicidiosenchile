@@ -7757,8 +7757,8 @@ const embeddedData = [
   {
     "Nombre_Victima": "Daniela Olate",
     "Edad": "23",
-    "Ciudad": "Florida",
-    "Region": "Biobío",
+    "Ciudad": "La Florida",
+    "Region": "Metropolitana",
     "Fecha": "7/16/24",
     "Tipo": "Arma blanca",
     "Relación Víctima": "Desconocido"
