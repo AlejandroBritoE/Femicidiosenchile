@@ -7755,10 +7755,10 @@ const embeddedData = [
     "Relación Víctima": "Vecino"
   },
   {
-    "Nombre_Victima": "Daniela Olate",
+    "Nombre_Victima": "Daniela Olate Venegas",
     "Edad": "23",
     "Ciudad": "La Florida",
-    "Region": "Metropolitana",
+    "Region": "Metropolitana", 
     "Fecha": "7/16/24",
     "Tipo": "Arma blanca",
     "Relación Víctima": "Desconocido"
